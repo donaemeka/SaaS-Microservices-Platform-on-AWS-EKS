@@ -21,7 +21,14 @@ app.get("/api/tenant/:id", async (req, res) => {
     res.status(500).json({ message: "Tenant service error" });
   }
 });
-
+app.post("/api/tasks", async (req, res) => {
+  try {
+    const response = await axios.post("http://task-service:3003/tasks", req.body);
+    res.status(201).json(response.data);
+  } catch (error) {
+    res.status(500).json({ message: "Task service error" });
+  }
+});
 app.get("/api/tasks/:tenantId", async (req, res) => {
   try {
     const response = await axios.get(`http://task-service:3003/tasks/${req.params.tenantId}`);

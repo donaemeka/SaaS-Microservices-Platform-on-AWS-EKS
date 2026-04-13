@@ -43,7 +43,20 @@ async function initDb() {
 
 app.get("/tasks/:tenantId", async (req, res) => {
   const tenantId = req.params.tenantId;
+app.post("/tasks", async (req, res) => {
+  const { title, status, tenantId } = req.body;
 
+  try {
+    const result = await pool.query(
+      "INSERT INTO tasks (title, status, tenant_id) VALUES ($1, $2, $3) RETURNING *",
+      [title, status, tenantId]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ message: "Database error" });
+  }
+});
   try {
     const result = await pool.query(
       "SELECT id, title, status FROM tasks WHERE tenant_id = $1",

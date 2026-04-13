@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # SaaS Microservices Platform (Kubernetes)
 
 🚧 Project in progress – more features (CI/CD, frontend, Terraform) coming soon
@@ -78,4 +78,4 @@ User → Envoy Gateway → HTTPRoute → API Gateway → Backend Services → Po
 - Add frontend (React)
 - Implement CI/CD with GitHub Actions
 - Provision infrastructure using Terraform
->>>>>>> 619ad07 (Improve README with project overview)
+

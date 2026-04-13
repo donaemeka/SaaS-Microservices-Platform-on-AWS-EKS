@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SaaS Task Manager</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>SaaS Task Manager</h1>
+
+    <form id="taskForm">
+      <input type="text" id="title" placeholder="Task title" required />
+      <select id="status">
+        <option value="pending">pending</option>
+        <option value="done">done</option>
+      </select>
+      <input type="text" id="tenantId" value="company-a" required />
+      <button type="submit">Add Task</button>
+    </form>
+
+    <button id="loadTasks">Load Tasks</button>
+
+    <ul id="taskList"></ul>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

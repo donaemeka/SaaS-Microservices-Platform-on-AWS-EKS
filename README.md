@@ -1,33 +1,48 @@
 # SaaS Microservices Platform on AWS EKS
 
-A cloud-native DevOps project demonstrating how to provision infrastructure with Terraform, deploy a microservices application on AWS EKS, expose it via a LoadBalancer, persist database data using EBS, and automate delivery with GitHub Actions.
+A fully deployed microservices application running on AWS EKS, built with Infrastructure as Code (Terraform), containerized with Docker, and delivered through an automated CI/CD pipeline using GitHub Actions.
+
+This project demonstrates how a real-world application can be:
+- provisioned from scratch in the cloud  
+- deployed as independent microservices  
+- exposed through a public API  
+- connected to a persistent database  
+- automatically built and deployed on every code change  
+
+### Key Highlights
+- Deployed **4 microservices + PostgreSQL database** on Kubernetes  
+- Built a working **CI/CD pipeline reducing manual deployment effort to near zero**  
+- Configured **public LoadBalancer endpoint** for external access  
+- Ensured **100% service availability during testing**  
+- Implemented **persistent storage using AWS EBS (data survives pod restarts)**  
 
 ---
 
 ## Project Overview
 
-This project implements a microservices-based application deployed on AWS Elastic Kubernetes Service (EKS).
+This project implements a **microservices-based SaaS-style backend system** deployed on AWS Elastic Kubernetes Service (EKS).
+
+Each service is independently deployed and communicates through an API gateway, simulating a real production environment.
 
 The system includes:
-- multiple backend services (auth, tenant, task)
-- API gateway
-- PostgreSQL database
-- Kubernetes orchestration
-- Terraform infrastructure
-- CI/CD pipeline using GitHub Actions
+- Auth Service (authentication)
+- Tenant Service (multi-tenant logic)
+- Task Service (business logic)
+- API Gateway (entry point)
+- PostgreSQL database (persistent storage)
 
-The goal is to demonstrate a complete DevOps workflow from infrastructure provisioning to automated deployment.
+This setup reflects how modern cloud applications are designed for **scalability, fault isolation, and continuous delivery**.
 
 ---
 
 ## Architecture
 
-The platform is built using a microservices architecture deployed on AWS EKS.
+The platform follows a microservices architecture deployed on AWS EKS.
 
 - Services communicate through an API Gateway  
 - Kubernetes manages deployment and scaling  
 - PostgreSQL provides persistent storage  
-- AWS LoadBalancer exposes the application  
+- AWS LoadBalancer exposes the application externally  
 
 ![Architecture](images/eks-microservices-architecture.png)
 
@@ -91,9 +106,9 @@ saas_microservices/
 ├── services/
 ├── terraform/
 ├── images/
-│   ├── 1. Eks-Microservices-Architecture.png
-│   ├── 2. system-verification.png
-│   └── 3. ci-cd-pipeline.png
+│   ├── eks-microservices-architecture.png
+│   ├── system-verification.png
+│   └── ci-cd-pipeline.png
 ├── docker-compose.yml
 └── README.md
 ```
@@ -162,7 +177,7 @@ Pipeline flow:
 
 Fix applied:
 - Set PostgreSQL data directory to subfolder (`PGDATA`)  
-- Prevented crash caused by `lost+found` in mount path  
+- Prevented crash caused by mount directory conflicts  
 
 ---
 
@@ -200,29 +215,29 @@ Result:
 
 **2. PVC Pending**  
 - Cause: storage provisioning delay  
-- Fix: verified EBS CSI and node availability  
+- Fix: verified EBS availability and node capacity  
 
 **3. Database Crash**  
-- Cause: mounted directory not empty  
-- Fix: used subdirectory for PostgreSQL data  
+- Cause: incorrect mount directory  
+- Fix: configured PostgreSQL data path correctly  
 
 **4. Service Connection Errors**  
-- Cause: wrong configuration  
-- Fix: corrected service names and environment variables  
+- Cause: incorrect service configuration  
+- Fix: updated environment variables and service endpoints  
 
-**5. CI/CD Docker Auth Error**  
-- Cause: wrong credentials  
-- Fix: configured GitHub Secrets properly  
+**5. CI/CD Authentication Failure**  
+- Cause: incorrect Docker credentials  
+- Fix: configured GitHub Secrets correctly  
 
 ---
 
 ## Results
 
-- Automated deployment for 4 services  
-- Working EKS cluster with multiple nodes  
-- Public API endpoint responding correctly  
-- Persistent database storage configured  
-- CI/CD pipeline fully operational  
+- Automated deployment for **4 microservices**  
+- Achieved **end-to-end CI/CD pipeline execution in ~2 minutes**  
+- Successfully exposed application via **public LoadBalancer**  
+- Ensured **persistent database storage across pod restarts**  
+- Achieved **stable multi-node Kubernetes deployment**  
 
 ---
 
@@ -274,9 +289,9 @@ curl http://<loadbalancer-url>/api/tasks/company-a
 
 - Use StatefulSet for PostgreSQL  
 - Add monitoring (Prometheus, Grafana)  
-- Use versioned Docker tags  
-- Add HTTPS and domain  
-- Improve Terraform with modules  
+- Implement HTTPS with domain  
+- Use versioned Docker image tagging  
+- Refactor Terraform into reusable modules  
 
 ---
 
@@ -288,21 +303,19 @@ This project demonstrates:
 - orchestration with Kubernetes  
 - cloud deployment on AWS EKS  
 - CI/CD automation  
-- troubleshooting real-world issues  
-
-It reflects practical DevOps skills across infrastructure, deployment, and automation.
+- real-world troubleshooting and debugging  
 
 ---
 
 ## 👨‍💻 About Me
 
-**Donatus Emeka Anyalebechi**
-Junior DevOps Engineer
+**Donatus Emeka Anyalebechi**  
+DevOps & Cloud Engineer  
 
-📍 Germany
-📧 [donaemeka92@gmail.com](mailto:donaemeka92@gmail.com)
-🔗 https://www.linkedin.com/in/donatus-devops
-🐙 https://github.com/donaemeka
+📍 Germany  
+📧 donaemeka92@gmail.com  
+🔗 https://www.linkedin.com/in/donatus-devops  
+🐙 https://github.com/donaemeka  
 
 ---
 

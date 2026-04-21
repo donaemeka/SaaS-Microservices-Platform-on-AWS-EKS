@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  docker:
+  ci-cd:
     runs-on: ubuntu-latest
 
     steps:

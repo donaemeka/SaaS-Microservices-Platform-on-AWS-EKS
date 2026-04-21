@@ -1,5 +1,6 @@
+# Main VPC for the project
 resource "aws_vpc" "main" {
-  cidr_block           = "10.0.0.0/16"
+  cidr_block           = var.vpc_cidr
   enable_dns_support   = true
   enable_dns_hostnames = true
 
@@ -7,64 +8,74 @@ resource "aws_vpc" "main" {
     Name = "${var.project_name}-vpc"
   }
 }
+
+# Public subnet for internet-facing resources such as load balancers and NAT
 resource "aws_subnet" "public_1" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.1.0/24"
+  cidr_block              = var.public_subnet_cidrs[0]
   availability_zone       = "${var.aws_region}a"
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${var.project_name}-public-1"
+    Name                                        = "${var.project_name}-public-1"
+    "kubernetes.io/role/elb"                    = "1"
+    "kubernetes.io/cluster/${var.project_name}" = "shared"
   }
 }
 
 resource "aws_subnet" "public_2" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.2.0/24"
+  cidr_block              = var.public_subnet_cidrs[1]
   availability_zone       = "${var.aws_region}b"
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${var.project_name}-public-2"
+    Name                                        = "${var.project_name}-public-2"
+    "kubernetes.io/role/elb"                    = "1"
+    "kubernetes.io/cluster/${var.project_name}" = "shared"
   }
 }
 
+# Private subnets for EKS worker nodes and internal workloads
 resource "aws_subnet" "private_1" {
   vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.3.0/24"
+  cidr_block        = var.private_subnet_cidrs[0]
   availability_zone = "${var.aws_region}a"
 
- tags = {
-  Name = "${var.project_name}-private-1"
-  "kubernetes.io/role/internal-elb" = "1"
-  "kubernetes.io/cluster/${var.project_name}" = "shared"
-}
+  tags = {
+    Name                                        = "${var.project_name}-private-1"
+    "kubernetes.io/role/internal-elb"           = "1"
+    "kubernetes.io/cluster/${var.project_name}" = "shared"
+  }
 }
 
 resource "aws_subnet" "private_2" {
   vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.4.0/24"
+  cidr_block        = var.private_subnet_cidrs[1]
   availability_zone = "${var.aws_region}b"
 
   tags = {
-    Name = "${var.project_name}-private-2"
+    Name                                        = "${var.project_name}-private-2"
+    "kubernetes.io/role/internal-elb"           = "1"
+    "kubernetes.io/cluster/${var.project_name}" = "shared"
   }
 }
+
+# Internet access for resources in public subnets
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
 
   tags = {
-  Name = "${var.project_name}-private-2"
-  "kubernetes.io/role/internal-elb" = "1"
-  "kubernetes.io/cluster/${var.project_name}" = "shared"
-}
+    Name = "${var.project_name}-igw"
+  }
 }
 
+# Public route table sends outbound traffic directly to the Internet Gateway
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
   route {
-    cidr_block = "0.0.0.0/0"
+    cidr_block = var.default_route_cidr
     gateway_id = aws_internet_gateway.igw.id
   }
 
@@ -83,26 +94,33 @@ resource "aws_route_table_association" "public_2" {
   route_table_id = aws_route_table.public.id
 }
 
+# Elastic IP required by the NAT Gateway
 resource "aws_eip" "nat" {
   domain = "vpc"
+
+  tags = {
+    Name = "${var.project_name}-nat-eip"
+  }
 }
 
+# NAT Gateway allows private nodes to reach the internet without being public
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat.id
   subnet_id     = aws_subnet.public_1.id
 
   tags = {
-  Name = "${var.project_name}-public-2"
-  "kubernetes.io/role/elb" = "1"
-  "kubernetes.io/cluster/${var.project_name}" = "shared"
-}
+    Name = "${var.project_name}-nat"
+  }
+
+  depends_on = [aws_internet_gateway.igw]
 }
 
+# Private route table sends outbound traffic through the NAT Gateway
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
   route {
-    cidr_block     = "0.0.0.0/0"
+    cidr_block     = var.default_route_cidr
     nat_gateway_id = aws_nat_gateway.nat.id
   }
 
@@ -121,6 +139,7 @@ resource "aws_route_table_association" "private_2" {
   route_table_id = aws_route_table.private.id
 }
 
+# IAM role for the EKS control plane
 resource "aws_iam_role" "eks_cluster_role" {
   name = "${var.project_name}-eks-role"
 
@@ -141,9 +160,11 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
+# Managed Kubernetes control plane
 resource "aws_eks_cluster" "main" {
   name     = var.project_name
   role_arn = aws_iam_role.eks_cluster_role.arn
+  version  = var.eks_cluster_version
 
   vpc_config {
     subnet_ids = [
@@ -159,6 +180,7 @@ resource "aws_eks_cluster" "main" {
   ]
 }
 
+# IAM role for worker nodes
 resource "aws_iam_role" "eks_node_role" {
   name = "${var.project_name}-node-role"
 
@@ -189,22 +211,24 @@ resource "aws_iam_role_policy_attachment" "ecr_readonly" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
+# Managed worker nodes where application pods run
 resource "aws_eks_node_group" "main" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "${var.project_name}-node-group"
   node_role_arn   = aws_iam_role.eks_node_role.arn
+
   subnet_ids = [
     aws_subnet.private_1.id,
     aws_subnet.private_2.id
   ]
 
   scaling_config {
-    desired_size = 1
-    max_size     = 1
-    min_size     = 1
+    desired_size = var.node_desired_size
+    max_size     = var.node_max_size
+    min_size     = var.node_min_size
   }
 
-  instance_types = ["t3.small"]
+  instance_types = [var.node_instance_type]
 
   depends_on = [
     aws_iam_role_policy_attachment.worker_node_policy,
@@ -213,4 +237,3 @@ resource "aws_eks_node_group" "main" {
     aws_eks_cluster.main
   ]
 }
-
